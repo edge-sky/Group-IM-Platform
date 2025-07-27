@@ -1,0 +1,34 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.lut.imserver.mapper.MessageMapper">
+    <resultMap id="BaseMessageMap" type="cn.lut.imserver.entity.Message">
+        <id property="id" column="id"/>
+        <result property="content" column="content"/>
+        <result property="type" column="type"/>
+        <result property="conversationId" column="conversation_id"/>
+        <result property="messageId" column="message_id"/>
+        <result property="time" column="time"/>
+        <result property="withdrawn" column="withdrawn"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, content, type, conversation_id, message_id, time, withdrawn
+    </sql>
+    <delete id="removeMessageWithConversationId">
+        DELETE FROM message
+        WHERE conversation_id = #{conversationId}
+    </delete>
+    <select id="getMessageVoWithLimit" resultType="cn.lut.imserver.entity.vo.MessageVo">
+        SELECT conversation_id, message_id, content, type, from_uid, time, withdrawn, is_read
+        FROM message
+        WHERE conversation_id = #{conversationId}
+        ORDER BY message_id DESC
+        <if test="earliestMessageId == 0">
+            LIMIT #{limit}
+        </if>
+        <if test="earliestMessageId != 0">
+            LIMIT #{limit} OFFSET #{earliestMessageId}
+        </if>
+    </select>
+</mapper>

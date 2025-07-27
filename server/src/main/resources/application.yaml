@@ -1,0 +1,62 @@
+server:
+  port: 8080
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: 
+    password: 
+    url: 
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+
+  # Redis
+  data:
+    redis:
+      host: 
+      password: 
+      port: 6379
+      database: 0
+  kafka:
+    bootstrap-servers: 
+    producer:
+      compression-type: lz4
+      batch-size: 512
+      linger-ms: 5
+      acks: 1
+      retries: 3
+
+# MyBatis配置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: 
+  configuration:
+    map-underscore-to-camel-case: true
+
+# 华为云 OBS 设置
+obs:
+  endpoint: 
+  ak: 
+  sk: 
+  bucket-name: 
+
+jwt:
+  secret: JztWxoBvuDhl0QFp46AgwUfmZ@ceoa$F
+  expiration: 259200000 # 1000*60*60*24*3
+
+logging:
+  config: classpath:logback-spring.xml
+  level:
+    root: INFO
+    cn.lut.imserver: DEBUG
+
+# 添加调试配置
+debug: false
+
+# Logback 状态监听器调试
+logback:
+  debug: true

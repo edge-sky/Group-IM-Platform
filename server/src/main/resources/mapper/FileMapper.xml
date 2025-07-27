@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.lut.imserver.mapper.FileMapper">
+
+    <resultMap id="BaseFileMap" type="cn.lut.imserver.entity.File">
+        <id property="id" column="id"/>
+        <result property="folderId" column="folder_id"/>
+        <result property="name" column="name"/>
+        <result property="latestVersion" column="latest_version"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, folder_id, name, latest_version, update_time, create_time
+    </sql>
+
+    <update id="updateLatestVersion" parameterType="cn.lut.imserver.entity.File">
+        UPDATE file
+        SET latest_version = #{latestVersion},
+            update_time = #{updateTime}
+        WHERE id = #{id} AND #{latestVersion} > latest_version
+    </update>
+
+    <select id="findByNameAndFolderId" resultType="cn.lut.imserver.entity.File">
+        SELECT <include refid="Base_Column_List"/>
+        FROM file
+        WHERE name = #{name} AND folder_id = #{folderId}
+    </select>
+    <select id="getFilesByConversation" resultType="cn.lut.imserver.entity.vo.FileVo">
+        SELECT *
+        FROM file
+        WHERE folder_id IN (
+            SELECT id
+            FROM folder
+            WHERE conversation_id = #{conversationId} AND deleted = 0
+        )
+    </select>
+
+    <delete id="removeBatchFilesByFolderIds">
+        DELETE FROM file
+        WHERE folder_id IN
+        <foreach item="folderId" collection="subFolderIds" open="(" separator="," close=")">
+            #{folderId}
+        </foreach>
+    </delete>
+</mapper>

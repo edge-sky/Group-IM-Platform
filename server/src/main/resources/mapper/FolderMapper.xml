@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.lut.imserver.mapper.FolderMapper">
+    <resultMap id="BaseFolderMap" type="cn.lut.imserver.entity.Folder">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="conversationId" column="conversation_id"/>
+        <result property="preFolderId" column="pre_folder_id"/>
+        <result property="name" column="name"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id, name, conversation_id, pre_folder_id
+    </sql>
+    <select id="countFolderWithConversation" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM folder
+        WHERE id = #{folderId} AND conversation_id = #{conversationId}
+    </select>
+
+
+    <select id="getSubFolderList" resultType="cn.lut.imserver.entity.Folder">
+        WITH RECURSIVE FolderTree AS (
+            SELECT id, conversation_id, pre_folder_id, name, update_uid
+            FROM folder
+            WHERE conversation_id = #{conversationId} AND pre_folder_id = #{folderId}
+
+            UNION ALL
+
+            SELECT f.id, f.conversation_id, f.pre_folder_id, f.name, f.update_uid
+            FROM folder AS f
+            INNER JOIN FolderTree AS ft ON f.pre_folder_id = ft.id
+            WHERE f.conversation_id = #{conversationId}
+        )
+        SELECT *
+        FROM FolderTree
+    </select>
+
+    <delete id="removeBatchFolders">
+        DELETE FROM folder
+        WHERE id IN
+        <foreach collection="subFolderIds" item="folderId" open="(" separator="," close=")">
+            #{folderId}
+        </foreach>
+        AND pre_folder_id != 0
+    </delete>
+</mapper>

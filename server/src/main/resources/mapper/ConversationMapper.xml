@@ -1,0 +1,49 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.lut.imserver.mapper.ConversationMapper">
+    <resultMap id="BaseConversationMap" type="cn.lut.imserver.entity.Conversation">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="userNum" column="user_num"/>
+        <result property="lastMessageId" column="last_message_id"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        c.id, name, last_message_id, user_num, manager_uid
+    </sql>
+
+    <!-- 保证最新的消息 id 递增 -->
+    <update id="updateLastMessageId">
+        UPDATE conversation
+        SET last_message_id = #{lastMessageId}
+        WHERE id = #{conversationId} AND #{lastMessageId} > last_message_id
+    </update>
+
+    <!-- 查询用户的会话列表 -->
+    <select id="getConversationsByUserId" resultType="cn.lut.imserver.entity.vo.ConversationVo">
+        SELECT<include refid="Base_Column_List"/>,
+        m.content AS last_message_content,
+        m.time AS last_message_time
+        FROM conversation_user AS cu
+            JOIN conversation AS c ON cu.conversation_id = c.id
+            LEFT JOIN message AS m ON c.last_message_id = m.message_id AND m.conversation_id = c.id
+        WHERE cu.uid = #{uid} AND cu.deleted = 0 AND c.deleted = 0
+    </select>
+
+    <!-- 查询会话的用户列表 -->
+    <select id="getUserIdsByConversationId" resultType="java.lang.Long">
+        SELECT uid
+        FROM conversation_user
+        WHERE conversation_id = #{conversationId}
+    </select>
+
+    <!-- 查询用户在该会话中的人员管理权限 -->
+    <select id="getMemberPermission" resultType="java.lang.Integer">
+        SELECT member_permission
+        FROM conversation_user
+        WHERE uid = #{uid}
+          AND conversation_id = #{conversationId}
+    </select>
+
+</mapper>

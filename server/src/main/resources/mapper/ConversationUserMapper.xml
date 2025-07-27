@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.lut.imserver.mapper.ConversationUserMapper">
+    <resultMap id="BaseConversationUserMap" type="cn.lut.imserver.entity.ConversationUser">
+        <id property="id" column="id"/>
+        <result property="conversationId" column="conversation_id"/>
+        <result property="uid" column="uid"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, conversation_id, uid, deleted, member_permission, file_operate_permission, file_visible_permission, message_permission
+    </sql>
+
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO conversation_user (<include refid="Base_Column_List"/>)
+        VALUES
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.id}, #{item.conversationId}, #{item.uid}, #{item.deleted})
+        </foreach>
+    </insert>
+    <insert id="insertOrUpdateUserConv" parameterType="cn.lut.imserver.entity.ConversationUser">
+        INSERT INTO conversation_user (id, conversation_id, uid, member_permission, file_permission, deleted)
+        VALUES (#{id}, #{conversationId}, #{uid}, #{memberPermission}, #{filePermission}, 0)
+        ON DUPLICATE KEY UPDATE
+            deleted = 0
+    </insert>
+
+    <!-- 移除用户 -->
+    <delete id="removeUserFromConversation">
+        UPDATE conversation_user
+        SET deleted = 1
+        WHERE conversation_id = #{conversationId} AND uid = #{userIdToRemove}
+    </delete>
+
+    <!-- 用户是存在与会话中 -->
+    <select id="existsByConversationIdAndUid" resultType="int">
+        SELECT COUNT(*) FROM conversation_user
+        WHERE conversation_id = #{conversationId} AND uid = #{uid} AND deleted = 0
+    </select>
+
+    <select id="getUserVoByConversationId" resultType="cn.lut.imserver.entity.vo.UserVo">
+        SELECT u.uid, u.username, u.avatar, cu.member_permission, cu.file_visible_permission, cu.file_operate_permission, cu.message_permission, cu.deleted
+        FROM user AS u, conversation_user AS cu
+        WHERE u.uid = cu.uid AND cu.conversation_id = #{conversationId}
+    </select>
+    <select id="getConversationUserByUid" resultType="cn.lut.imserver.entity.ConversationUser">
+        SELECT <include refid="Base_Column_List"/>
+        FROM conversation_user
+        WHERE uid = #{uid} AND conversation_id = #{conversationId}
+    </select>
+
+    <!-- 查询该操作是否合法 -->
+    <select id="isOperatePermission" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM conversation_user
+        WHERE uid = #{uid}
+        AND conversation_id = #{conversationId}
+        <if test="memberPermission != false">
+            AND member_permission = 1
+        </if>
+        <if test="messagePermission != false">
+            AND message_permission = 1
+        </if>
+        <if test="fileVisiblePermission != false">
+            AND file_visible_permission = 1
+        </if>
+        <if test="fileOperatePermission != false">
+            AND file_operate_permission = 1
+        </if>
+    </select>
+</mapper>
