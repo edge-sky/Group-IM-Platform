@@ -21,8 +21,8 @@
         </foreach>
     </insert>
     <insert id="insertOrUpdateUserConv" parameterType="cn.lut.imserver.entity.ConversationUser">
-        INSERT INTO conversation_user (id, conversation_id, uid, member_permission, file_permission, deleted)
-        VALUES (#{id}, #{conversationId}, #{uid}, #{memberPermission}, #{filePermission}, 0)
+        INSERT INTO conversation_user (id, conversation_id, uid, member_permission, file_visible_permission, file_operate_permission, deleted)
+        VALUES (#{id}, #{conversationId}, #{uid}, #{memberPermission}, #{fileVisiblePermission}, #{fileOperatePermission}, 0)
         ON DUPLICATE KEY UPDATE
             deleted = 0
     </insert>
