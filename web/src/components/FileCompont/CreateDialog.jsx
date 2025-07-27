@@ -84,7 +84,7 @@ const CreateDialog = ({ isOpen, onClose, onSubmit, mode }) => {
                                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                             <Upload className="w-8 h-8 mb-3 text-gray-400" />
                                             <p className="mb-2 text-sm text-gray-500">
-                                                <span className="font-semibold">点击选择文件</span> 或拖拽到此处
+                                                <span className="font-semibold">点击选择文件</span> 
                                             </p>
                                         </div>
                                         <input ref={fileInputRef} type="file" className="hidden" multiple onChange={handleFileChange} />
