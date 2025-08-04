@@ -3,12 +3,10 @@ package cn.lut.imserver.handle;
 import cn.lut.imserver.entity.Message;
 import cn.lut.imserver.entity.vo.MessageVo;
 import cn.lut.imserver.service.ConversationService;
-import cn.lut.imserver.service.MessageService;
 import cn.lut.imserver.util.MqUtil;
 import cn.lut.imserver.util.RedisUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
-import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,17 +22,15 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.logging.Logger;
 
 @Component
-@Slf4j
 public class WebSocketHandle extends TextWebSocketHandler {
+    private final Logger logger = Logger.getLogger(this.getClass().getName());
+
     private static int onlineCount = 0;
     private static final Set<WebSocketSession> sessionList = new CopyOnWriteArraySet<>();
     private static final Map<Long, WebSocketSession> userSessionMap = new ConcurrentHashMap<>();
 
     @Autowired
     private RedisUtil redisUtil;
-
-    @Autowired
-    private MessageService messageService;
 
     @Autowired
     private ConversationService conversationService;
@@ -47,7 +43,7 @@ public class WebSocketHandle extends TextWebSocketHandler {
         // 从 session 中获取 uid
         long uid = Long.parseLong((String) session.getAttributes().get("uid"));
 
-        log.info("WebSocket connection established: {}, uid: {}", session.getId(), uid);
+        logger.info("WebSocket connection established: " + session.getId() + ", uid: " + uid);
         JSONObject hello = new JSONObject();
         hello.put("respond", "connectionEstablished");
         session.sendMessage(new TextMessage(hello.toJSONString()));
@@ -77,14 +73,14 @@ public class WebSocketHandle extends TextWebSocketHandler {
 
     @Override
     public void handleTextMessage(@NotNull WebSocketSession session, TextMessage message) throws IOException {
-        log.info("Received message: {}", message.getPayload());
+        logger.info("Received message: " + message.getPayload());
         JSONObject jsonObject;
         JSONObject response = new JSONObject();
 
         try {
             jsonObject = JSON.parseObject(message.getPayload());
         } catch (Exception e) {
-            log.warn("When parsing JSON catch error: {}", e.getMessage());
+            logger.warning("When parsing JSON catch error: " + e.getMessage());
 
             response.put("respond", "error");
             response.put("code", "400");
@@ -98,7 +94,7 @@ public class WebSocketHandle extends TextWebSocketHandler {
         long currentUid = Long.parseLong((String) session.getAttributes().get("uid"));
         long conversationId = jsonObject.getLongValue("conversationId");
         if (requestType == null) {
-            log.warn("Request is null");
+            logger.warning("Request is null");
 
             response.put("respond", "error");
             response.put("code", "400");
@@ -110,7 +106,7 @@ public class WebSocketHandle extends TextWebSocketHandler {
         // 匹配请求
         if (requestType.equalsIgnoreCase("sendMessage")) {
             if (conversationId <= 0) {
-                log.warn("Conversation ID is invalid: {}", conversationId);
+                logger.warning("Conversation ID is invalid: " + conversationId);
 
                 response.put("respond", "error");
                 response.put("code", "400");
@@ -130,7 +126,7 @@ public class WebSocketHandle extends TextWebSocketHandler {
             );
 
             if (!hasPermission) {
-                log.warn("User does not have permission to send messages in conversation ID: {}", conversationId);
+                logger.warning("User does not have permission to send messages in conversation ID: " + conversationId);
 
                 response.put("respond", "error");
                 response.put("code", "403");
@@ -139,13 +135,13 @@ public class WebSocketHandle extends TextWebSocketHandler {
                 return;
             }
 
-            log.info("Processing sendMessage request for conversation ID: {}", conversationId);
+            logger.info("Processing sendMessage request for conversation ID: " + conversationId);
             String content = jsonObject.getString("content");
             int type = jsonObject.getIntValue("type");
             onMessage(currentUid, conversationId, content, type);
         } else if (requestType.equalsIgnoreCase("fetchMessages")) {
             if (conversationId <= 0) {
-                log.warn("Conversation ID is invalid: {}", conversationId);
+                logger.warning("Conversation ID is invalid: " + conversationId);
 
                 response.put("respond", "error");
                 response.put("code", "400");
@@ -158,14 +154,14 @@ public class WebSocketHandle extends TextWebSocketHandler {
             List<MessageVo> messageVoList = fetchMessages(conversationId, earliestMessageId, limit);
 
             if (messageVoList.isEmpty()) {
-                log.info("No messages found for conversation ID: {}", conversationId);
+                logger.info("No messages found for conversation ID: " + conversationId);
 
                 response.put("respond", "messagesList");
                 response.put("code", "200");
+                response.put("payload", Collections.emptyList());
                 response.put("message", "No messages found");
-                response.put("payload", new ArrayList<>());
             } else {
-                log.info("Found {} messages for conversation ID: {}", messageVoList.size(), conversationId);
+                logger.info("Found " + messageVoList.size() + " messages for conversation ID: " + conversationId);
 
                 response.put("respond", "messagesList");
                 response.put("code", "200");
@@ -173,7 +169,7 @@ public class WebSocketHandle extends TextWebSocketHandler {
                 response.put("payload", messageVoList);
             }
         } else {
-            log.warn("Unknown request type: {}", requestType);
+            logger.warning("Unknown request type: " + requestType);
 
             response.put("respond", "error");
             response.put("code", "400");
@@ -189,12 +185,12 @@ public class WebSocketHandle extends TextWebSocketHandler {
 
         boolean removed = sessionList.remove(session);
         userSessionMap.remove(uid, session); // Remove the specific session for the UID
-        log.info("WebSocket connection closed: {}, uid: {} with status: {}", session.getId(), uid, status);
+        logger.info("WebSocket connection closed: " + session.getId() + ", uid: " + uid + " with status: " + status);
 
         if (removed) {
             onlineCount = sessionList.size(); // More accurate count
         }
-        log.info("User disconnected. Total online users: {}", onlineCount);
+        logger.info("User disconnected. Total online users: " + onlineCount);
     }
 
     private void onMessage(long fromUid, long conversationId, String content, int type) throws IOException {
@@ -213,7 +209,7 @@ public class WebSocketHandle extends TextWebSocketHandler {
         try {
             // 将消息加入消息队列
             String messageJson = JSON.toJSONString(msg);
-            mqUtil.sendMessage("save-message", messageJson);
+            mqUtil.sendMessage("save-message", String.valueOf(msg.getId()), messageJson);
         } catch (Exception e) {
             jsonObject.put("respond", "sendMessageCallback");
             jsonObject.put("code", "500");
@@ -248,7 +244,7 @@ public class WebSocketHandle extends TextWebSocketHandler {
 
     List<MessageVo> fetchMessages(long conversationId, long earliestMessageId, int limit) {
         if (conversationId <= 0) {
-            log.warn("Conversation ID is invalid: {}", conversationId);
+            logger.warning("Conversation ID is invalid: " + conversationId);
             return Collections.emptyList();
         }
 
