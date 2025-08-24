@@ -1,10 +1,5 @@
 /*
  Navicat Premium Data Transfer
-
- Source Server         : 阿里云-广州
- Source Server Type    : MySQL
- Source Server Version : 80405
- Source Host           : 8.134.98.150:3306
  Source Schema         : im-server
 
  Target Server Type    : MySQL
@@ -128,3 +123,4 @@ CREATE TABLE `user`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = DYNAMIC;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
