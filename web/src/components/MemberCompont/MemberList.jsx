@@ -34,11 +34,10 @@ const MemberList = ({open, currUid, conversationId, onOpenChange, chats}) => {
                 isCreator.current = (currentChat.managerUid === currUid);
             }
 
-            // // 获取权限
-            // await api.get(`/${conversationId}/conversation/permission`).then(response => {
-            //     memberPermission.current = response.permission;
-            //     isCreator.current = response.isCreator || false;
-            // });
+            // 获取权限
+            await api.get(`/${conversationId}/conversation/permission`).then(response => {
+                memberPermission.current = response.permission;
+            });
 
             // 获取成员信息
             api.get(`/${conversationId}/conversation/userInfo`)
