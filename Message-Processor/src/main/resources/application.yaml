@@ -2,10 +2,10 @@ server:
   port: 8089
 spring:
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    driver-class-name: 
     username: root
     password: root
-    url: jdbc:mysql://127.0.0.1:3306/im-server
+    url: 
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
@@ -13,12 +13,12 @@ spring:
   # Redis
   data:
     redis:
-      host: edgesky.cn
-      password: iampig
-      port: 6379
+      host: 
+      password: 
+      port: 
       database: 0
   kafka:
-    bootstrap-servers: 172.31.208.1:9092
+    bootstrap-servers: 
     consumer:
       group-id: message-processor-group
       auto-offset-reset: earliest
