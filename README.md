@@ -1,6 +1,10 @@
 # Group-IM-Platform
 面向小型团队的协作平台，提供多人会话下即时通讯服务与具备版本控制的文件树，团队成员权限控制。
 
+## 架构设计
+<img width="391" height="311" alt="图片" src="https://github.com/user-attachments/assets/b90c00dc-1478-4147-a762-84b26dd3d515" />
+
+
 ## 演示
 ### 主页面
 <img width="1887" height="1138" alt="image" src="https://github.com/user-attachments/assets/00519d4a-a923-4d72-8ddb-af2294c9b342" />
