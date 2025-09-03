@@ -5,6 +5,7 @@ import cn.lut.imserver.entity.vo.MessageVo;
 import cn.lut.imserver.service.ConversationService;
 import cn.lut.imserver.util.MqUtil;
 import cn.lut.imserver.util.RedisUtil;
+import cn.lut.imserver.util.SnowFlakeUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import org.jetbrains.annotations.NotNull;
@@ -196,6 +197,7 @@ public class WebSocketHandle extends TextWebSocketHandler {
     private void onMessage(long fromUid, long conversationId, String content, int type) throws IOException {
         // 封装 message
         Message msg = new Message();
+        msg.setId(SnowFlakeUtil.getId());
         msg.setContent(content);
         msg.setType(type);
         msg.setConversationId(conversationId);
@@ -207,10 +209,37 @@ public class WebSocketHandle extends TextWebSocketHandler {
 
         JSONObject jsonObject = new JSONObject();
         try {
-            // 将消息加入消息队列
+            // 1. 创建MessageVo用于Redis缓存和WebSocket推送
+            MessageVo messageVo = new MessageVo();
+            messageVo.setConversationId(String.valueOf(msg.getConversationId()));
+            messageVo.setMessageId(msg.getMessageId());
+            messageVo.setContent(msg.getContent());
+            messageVo.setType(msg.getType());
+            messageVo.setFromUid(String.valueOf(msg.getFromUid()));
+            messageVo.setTime(msg.getTime());
+            messageVo.setWithdrawn(msg.getWithdrawn());
+            messageVo.setIsRead(msg.getIsRead());
+            
+            // 2. 直接写入Redis缓存
+            redisUtil.addMessageToConversationCache(messageVo, 7);
+            
+            // 3. 直接推送消息到WebSocket客户端
+            JSONObject pushJson = JSON.parseObject(JSON.toJSONString(messageVo));
+            pushJson.put("respond", "receiveMessage");
+            Set<Long> uidList = redisUtil.getConvUidList(msg.getConversationId());
+            pushJsonObjectToMultiClient(uidList, pushJson);
+            
+            // 4. 异步发送消息到Kafka进行持久化
             String messageJson = JSON.toJSONString(msg);
-            mqUtil.sendMessage("save-message", String.valueOf(msg.getId()), messageJson);
+            mqUtil.sendMessage("save-message", String.valueOf(msg.getMessageId()), messageJson);
+            
+            // 5. 发送成功回执给发送者
+            jsonObject.put("respond", "sendMessageCallback");
+            jsonObject.put("code", "200");
+            jsonObject.put("message", "消息发送成功");
+            pushJsonObjectToClient(fromUid, jsonObject);
         } catch (Exception e) {
+            logger.warning("Error in onMessage: " + e.getMessage());
             jsonObject.put("respond", "sendMessageCallback");
             jsonObject.put("code", "500");
             jsonObject.put("message", "消息发送失败");
@@ -248,9 +277,7 @@ public class WebSocketHandle extends TextWebSocketHandler {
             return Collections.emptyList();
         }
 
-        List<MessageVo> res = redisUtil.getMessagesFromConversationCache(conversationId, earliestMessageId, limit);
-
-        return res;
+        return redisUtil.getMessagesFromConversationCache(conversationId, earliestMessageId, limit);
     }
 }
 
