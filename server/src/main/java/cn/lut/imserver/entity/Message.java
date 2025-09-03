@@ -10,7 +10,6 @@ import java.util.Date;
 
 @Data
 public class Message implements Serializable {
-    @TableId(type = IdType.ASSIGN_ID)
     private Long id; // 消息ID
     private String content; // 消息内容
     private int type; //  消息类型
@@ -22,3 +21,4 @@ public class Message implements Serializable {
     private int withdrawn; // 逻辑撤回标志
     private int isRead; // 是否已读，0表示未读，1表示已读
 }
+
