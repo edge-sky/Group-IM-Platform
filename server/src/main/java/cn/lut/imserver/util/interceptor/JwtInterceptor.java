@@ -1,11 +1,13 @@
 package cn.lut.imserver.util.interceptor;
 
 import cn.lut.imserver.util.JWTUtil;
+import cn.lut.imserver.util.UserContext;
 import com.alibaba.fastjson2.JSONObject;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
@@ -17,6 +19,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
  * JWT拦截器，用于验证请求中的token
  */
 @Component
+@Slf4j
 public class JwtInterceptor implements HandlerInterceptor {
 
     @Autowired
@@ -60,6 +63,20 @@ public class JwtInterceptor implements HandlerInterceptor {
         // 将用户信息存入请求属性中，供后续处理使用
         request.setAttribute("uid", jws.getPayload().get("uid"));
         request.setAttribute("username", jws.getPayload().get("username"));
+
+        Object uid = jws.getPayload().get("uid");
+        if (uid instanceof String) {
+            UserContext.setUid(Long.parseLong((String) uid));
+        } else {
+            log.error("Unsupported class of uid");
+            log.error(uid.getClass().toString());
+        }
+        Object username = jws.getPayload().get("username");
+        if (username instanceof String) {
+            UserContext.setUsername((String) username);
+        } else {
+            log.error("Unsupported class of username");
+        }
         return true;
     }
 }
